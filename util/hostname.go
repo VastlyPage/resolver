@@ -3,6 +3,7 @@ package hlbaby
 import (
 	"crypto/tls"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -38,19 +39,12 @@ func cleanUpCache() {
 	}
 }
 
-func NormalizeHostname(url string) string {
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "https://")
-
-	if idx := strings.IndexAny(url, "/:@"); idx != -1 {
-		url = url[idx+1:]
+func NormalizeHostname(_url string) string {
+	obj, err := url.Parse(_url)
+	if err != nil {
+		return ""
 	}
-
-	if strings.Contains(url, "[") && strings.Contains(url, "]") {
-		url = strings.TrimSuffix(strings.Split(url, "]")[0], "[")
-	}
-
-	return url
+	return obj.Hostname()
 }
 
 func GetClient() *http.Client {
