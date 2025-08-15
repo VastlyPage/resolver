@@ -19,6 +19,8 @@ We try to make the program as efficient as possible so it can run anywhere. This
 10GB SSD
 1Gbit/s network uplink
 Debian 12
+
+Softwares: Redis and certbot
 ```
 
-Aim for higher uplink, storage, and memory it's the main priority.
+Aim for higher uplink, storage, and memory it's the main priority. Most of the time, the binary would not consume more than 5% of CPU time.
