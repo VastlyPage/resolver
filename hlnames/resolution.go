@@ -32,6 +32,17 @@ func ResolveHostAndURL(kv map[string]interface{}, path string) (host, url string
 		return
 	}
 
+	if mirror, ok := kv["MIRROR"].(string); ok {
+		host = hlbabyutil.NormalizeHostname(mirror)
+		proto := hlbabyutil.IsHostReachable(host)
+		if proto > 0 {
+			url = strings.TrimRight(mirror, "/") + path
+			return
+		}
+		err = fmt.Errorf("MIRROR record not reachable")
+		return
+	}
+
 	host, err = ResolveIPRecords(kv)
 	if err == nil {
 		url = hlbabyutil.MakeURL(host, 1) + path
