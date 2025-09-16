@@ -51,6 +51,7 @@ func ResolveHostAndURL(kv map[string]interface{}, path string) (host, url string
 		return
 	}
 
+	// TODO: MIRROR should be handled differently by spawning a browser to visit the page or risk getting omitted EoY
 	if mirror, ok := kv["MIRROR"].(string); ok {
 		host = hlbabyutil.NormalizeHostname(mirror)
 		proto := hlbabyutil.IsHostReachable(host)
