@@ -40,6 +40,9 @@ func cleanUpCache() {
 }
 
 func NormalizeHostname(_url string) string {
+	if !strings.HasPrefix(_url, "http") {
+		_url = "http://" + _url
+	}
 	obj, err := url.Parse(_url)
 	if err != nil {
 		return ""
