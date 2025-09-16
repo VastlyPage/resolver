@@ -9,6 +9,25 @@ import (
 )
 
 func ResolveHostAndURL(kv map[string]interface{}, path string) (host, url string, isRedirect bool, err error) {
+	if routes, ok := kv["ROUTES"].(string); ok {
+		for route := range strings.SplitSeq(routes, ";") {
+			_r := strings.SplitN(route, "=", 2)
+			routePath, routeDestination := _r[0], _r[1]
+
+			if path == routePath {
+				// TODO: Handle URI edge cases
+				if strings.HasPrefix(routeDestination, "/") {
+					path = routeDestination
+					break
+				} else {
+					url = routeDestination
+					host = hlbabyutil.NormalizeHostname(url)
+					return
+				}
+			}
+		}
+	}
+
 	if redirect, ok := kv["REDIRECT"].(string); ok {
 		isRedirect = true
 		url = hlbabyutil.EnsureHTTPPrefix(redirect)
