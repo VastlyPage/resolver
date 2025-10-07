@@ -3,10 +3,12 @@ package main
 import (
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	hlnames "vastly.page/hl.baby/hlnames"
@@ -46,10 +48,36 @@ func initLogger() {
 	// Ensure log file is closed on shutdown
 	go func() {
 		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, os.Interrupt, os.Interrupt, os.Kill)
+		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 		<-stop
 		logFile.Close()
 	}()
+}
+
+// HTTPS CONNECT tunneling handler
+func handleConnect(w http.ResponseWriter, r *http.Request) {
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "Hijacking not supported", http.StatusInternalServerError)
+		return
+	}
+	clientConn, _, err := hijacker.Hijack()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	targetConn, err := net.Dial("tcp", r.Host)
+	if err != nil {
+		clientConn.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
+		clientConn.Close()
+		return
+	}
+
+	clientConn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
+
+	go func() { io.Copy(targetConn, clientConn); targetConn.Close() }()
+	go func() { io.Copy(clientConn, targetConn); clientConn.Close() }()
 }
 
 func runHTTPSServer() {
@@ -67,9 +95,19 @@ func runHTTPSServer() {
 
 	e.Any("/*", handleRequest)
 
+	// Use standard net/http mux for CONNECT
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodConnect {
+			handleConnect(w, r)
+			return
+		}
+		e.ServeHTTP(w, r)
+	})
+
 	server := &http.Server{
 		Addr:     ":443",
-		Handler:  e,
+		Handler:  mux,
 		ErrorLog: log.New(io.Discard, "", 0), // Suppress TLS handshake errors
 	}
 	log.Fatal(server.ListenAndServeTLS("fullchain.pem", "privkey.pem"))
@@ -87,7 +125,7 @@ func runHTTPServer() {
 
 func handleRequest(c echo.Context) error {
 	hostParts := strings.Split(c.Request().Host, ".")
-	if len(hostParts) <= 2 || (!strings.HasSuffix(c.Request().Host, "hl.place") && !strings.HasSuffix(c.Request().Host, "hl.baby")) {
+	if len(hostParts) < 2 || (!strings.HasSuffix(c.Request().Host, "hl.place") && !strings.HasSuffix(c.Request().Host, "hl.baby") && !strings.HasSuffix(c.Request().Host, ".hl")) {
 		return c.Redirect(http.StatusFound, "https://vastly.page")
 	}
 
@@ -128,7 +166,7 @@ func main() {
 	log.Println("Server started on https://0.0.0.0:443")
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, os.Interrupt, os.Kill)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 	log.Println("Shutting down servers...")
 
