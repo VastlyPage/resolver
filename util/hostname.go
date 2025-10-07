@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	protocolCache   = make(map[string]cachedProtocol)
-	cacheMutex      sync.Mutex
-	cacheExpiration = 60 * time.Second
+	protocolCache               = make(map[string]cachedProtocol)
+	cacheMutex                  sync.Mutex
+	DEFAULT_PROTOCOL_CACHE_TIME = 60 * time.Second
+	DEFAULT_TICK_TIME           = 10 * time.Second
 )
 
 type cachedProtocol struct {
@@ -25,13 +26,13 @@ func init() {
 }
 
 func cleanUpCache() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(DEFAULT_TICK_TIME)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		cacheMutex.Lock()
 		for host, entry := range protocolCache {
-			if time.Since(entry.lastUsed) > cacheExpiration {
+			if time.Since(entry.lastUsed) > DEFAULT_PROTOCOL_CACHE_TIME {
 				delete(protocolCache, host)
 			}
 		}
@@ -43,10 +44,12 @@ func NormalizeHostname(_url string) string {
 	if !strings.HasPrefix(_url, "http") {
 		_url = "http://" + _url
 	}
+
 	obj, err := url.Parse(_url)
 	if err != nil {
 		return ""
 	}
+
 	return obj.Hostname()
 }
 
@@ -128,5 +131,5 @@ func IsHostReachable(hostname string) uint {
 }
 
 func isIPv6(hostname string) bool {
-	return strings.Contains(hostname, ":") && !strings.Contains(hostname, "]")
+	return strings.Contains(hostname, ":") && strings.Contains(hostname, "]")
 }
