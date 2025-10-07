@@ -79,7 +79,10 @@ func runHTTPServer() {
 
 func handleRequest(c echo.Context) error {
 	hostParts := strings.Split(c.Request().Host, ".")
-	if len(hostParts) < 2 || (!strings.HasSuffix(c.Request().Host, "hl.place") && !strings.HasSuffix(c.Request().Host, "hl.baby") && !strings.HasSuffix(c.Request().Host, ".hl")) {
+	if len(hostParts) <= 2 || (!strings.HasSuffix(c.Request().Host, "hl.place") && !strings.HasSuffix(c.Request().Host, "hl.baby") && !strings.HasSuffix(c.Request().Host, ".hl")) {
+		latency := time.Since(c.Get("startTime").(time.Time))
+		log.Printf("%s (%s) %s --> %s", c.Request().Method, latency, c.Request().Host, "Fallback")
+
 		return c.Redirect(http.StatusFound, "https://vastly.page")
 	}
 
@@ -101,6 +104,9 @@ func handleRequest(c echo.Context) error {
 	}
 
 	if isRedirect {
+		latency := time.Since(c.Get("startTime").(time.Time))
+		log.Printf("%s (%s) %s --> %s", c.Request().Method, latency, name, url)
+
 		return c.Redirect(http.StatusFound, url)
 	}
 
