@@ -12,7 +12,8 @@ var (
 	redisClient = redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
-	ctx = context.Background()
+	ctx                = context.Background()
+	DEFAULT_CACHE_TIME = 5 * time.Minute
 )
 
 func ResetCache() {
@@ -22,37 +23,54 @@ func ResetCache() {
 	}
 }
 
+type RContent struct {
+	url    string
+	method string
+}
+
+// Redis key for content on specified method
+func (c RContent) Key() string {
+	return c.url + ":" + c.method
+}
+
+// Redis HTTP headers for content on specific method
+func (c RContent) KeyHeaders() string {
+	return c.Key() + ":headers"
+}
+
+// Redis HTTP status code for content on specific method
+func (c RContent) KeyStatus() string {
+	return c.Key() + ":status"
+}
+
 func CacheContent(url string, method string, content []byte, responseHeaders map[string]string, statusCode int) {
-	key := url + ":" + method
-	keyHeaders := key + ":headers"
-	err := redisClient.Set(ctx, key, content, 5*time.Minute).Err()
+	rc := RContent{url: url, method: method}
+
+	err := redisClient.Set(ctx, rc.Key(), content, DEFAULT_CACHE_TIME).Err()
 	if err != nil {
 		panic(err)
 	}
 
-	err = redisClient.HSet(ctx, keyHeaders, responseHeaders).Err()
+	err = redisClient.HSet(ctx, rc.KeyHeaders(), responseHeaders).Err()
 	if err != nil {
 		panic(err)
 	}
 
-	err = redisClient.Expire(ctx, keyHeaders, 5*time.Minute).Err()
+	err = redisClient.Expire(ctx, rc.KeyHeaders(), DEFAULT_CACHE_TIME).Err()
 	if err != nil {
 		panic(err)
 	}
 
-	keyStatusCode := key + ":statusCode"
-	err = redisClient.Set(ctx, keyStatusCode, statusCode, 5*time.Minute).Err()
+	err = redisClient.Set(ctx, rc.KeyStatus(), statusCode, DEFAULT_CACHE_TIME).Err()
 	if err != nil {
 		panic(err)
 	}
 }
 
 func GetCachedContent(url string, method string) ([]byte, map[string]string, int, bool) {
-	key := url + ":" + method
-	keyHeaders := key + ":headers"
+	rc := RContent{url: url, method: method}
 
-	keyStatusCode := key + ":statusCode"
-	statusCodeStr, err := redisClient.Get(ctx, keyStatusCode).Result()
+	statusCodeStr, err := redisClient.Get(ctx, rc.KeyStatus()).Result()
 	if err == redis.Nil {
 		return nil, nil, 0, false
 	} else if err != nil {
@@ -64,14 +82,14 @@ func GetCachedContent(url string, method string) ([]byte, map[string]string, int
 		panic(err)
 	}
 
-	val, err := redisClient.Get(ctx, key).Bytes()
+	val, err := redisClient.Get(ctx, rc.Key()).Bytes()
 	if err == redis.Nil {
 		return nil, nil, 0, false
 	} else if err != nil {
 		panic(err)
 	}
 
-	headers, err := redisClient.HGetAll(ctx, keyHeaders).Result()
+	headers, err := redisClient.HGetAll(ctx, rc.KeyHeaders()).Result()
 	if err != nil {
 		panic(err)
 	}
