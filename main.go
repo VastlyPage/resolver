@@ -11,48 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"hl.place/resolver/backend"
 	hlnames "hl.place/resolver/hlnames"
-	hlbabyutil "hl.place/resolver/util"
+	hlutil "hl.place/resolver/util"
 
-	"github.com/fatih/color"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
-
-type colorWriter struct{}
-
-func (cw *colorWriter) Write(p []byte) (n int, err error) {
-	msg := string(p)
-	switch {
-	case strings.Contains(msg, "[ERROR]"):
-		return color.New(color.FgRed).Fprint(os.Stdout, msg)
-	case strings.Contains(msg, "[WARN]"):
-		return color.New(color.FgYellow).Fprint(os.Stdout, msg)
-	case strings.Contains(msg, "[INFO]"):
-		return color.New(color.FgCyan).Fprint(os.Stdout, msg)
-	default:
-		return color.New(color.FgWhite).Fprint(os.Stdout, msg)
-	}
-}
-
-func initLogger() {
-	logFile, err := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		color.New(color.FgRed).Fprintf(os.Stderr, "[ERROR] Failed to open log file: %v\n", err)
-		os.Exit(1)
-	}
-
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.SetOutput(io.MultiWriter(logFile, &colorWriter{}))
-
-	// Ensure log file is closed on shutdown
-	go func() {
-		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-		<-stop
-		logFile.Close()
-	}()
-}
 
 // HTTPS CONNECT tunneling handler
 func handleConnect(w http.ResponseWriter, r *http.Request) {
@@ -81,17 +45,7 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 }
 
 func runHTTPSServer() {
-	e := echo.New()
-	e.Use(middleware.Gzip(), middleware.Recover())
-	e.HideBanner = true
-	e.Logger.SetOutput(io.Discard)
-
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set("startTime", time.Now())
-			return next(c)
-		}
-	})
+	e := backend.SetupEcho()
 
 	e.Any("/*", handleRequest)
 
@@ -132,7 +86,7 @@ func handleRequest(c echo.Context) error {
 	// TODO: Subdomain subdomain subdomain. e.g. subsub.sub.example.hl.place
 	subdomain := hostParts[0]
 	name := subdomain + ".hl"
-	nameHash := hlbabyutil.NameHash(name)
+	nameHash := hlutil.NameHash(name)
 	kv := hlnames.QueryKV(nameHash)
 
 	if kv == nil {
@@ -150,15 +104,18 @@ func handleRequest(c echo.Context) error {
 		return c.Redirect(http.StatusFound, url)
 	}
 
-	hlbabyutil.PipeURLToResponse(c.Request().Method, url, c.Response())
+	hlutil.PipeURLToResponse(c.Request().Method, url, c.Response())
+
 	latency := time.Since(c.Get("startTime").(time.Time))
 	log.Printf("%s (%s) %s --> %s", c.Request().Method, latency, name, url)
+
 	return nil
 }
 
 func main() {
-	initLogger()
-	hlbabyutil.ResetCache()
+	log.Println("Starting server...")
+	hlutil.InitLogger()
+	hlutil.ResetCache()
 
 	go runHTTPSServer()
 	go runHTTPServer()
@@ -168,8 +125,8 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
-	log.Println("Shutting down servers...")
 
-	// Close Redis client on shutdown
-	hlbabyutil.CloseRedisClient()
+	// Clean up
+	log.Println("Shutting down servers...")
+	hlutil.CloseRedisClient()
 }
