@@ -1,4 +1,4 @@
-module vastly.page/hl.baby
+module hl.place/resolver
 
 go 1.24.1
 

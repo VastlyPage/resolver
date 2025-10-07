@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	hlbabyutil "vastly.page/hl.baby/util"
+	hlbabyutil "hl.place/resolver/util"
 )
 
 func ResolveHostAndURL(kv map[string]interface{}, path string) (host, url string, isRedirect bool, err error) {

@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	hlnames "vastly.page/hl.baby/hlnames"
-	hlbabyutil "vastly.page/hl.baby/util"
+	hlnames "hl.place/resolver/hlnames"
+	hlbabyutil "hl.place/resolver/util"
 
 	"github.com/fatih/color"
 	"github.com/labstack/echo/v4"
