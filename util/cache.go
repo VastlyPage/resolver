@@ -10,7 +10,7 @@ import (
 
 var (
 	redisClient = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: "redis:6379",
 	})
 	ctx                = context.Background()
 	DEFAULT_CACHE_TIME = 5 * time.Minute

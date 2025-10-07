@@ -1,0 +1,9 @@
+services:
+  resolver:
+    image: hl.place/resolver
+    restart: always
+    volumes:
+      - ./resources:/home/user/resources:ro
+  redis:
+    image: redis:8.2.2-bookworm
+    restart: always

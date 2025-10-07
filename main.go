@@ -64,7 +64,7 @@ func runHTTPSServer() {
 		Handler:  mux,
 		ErrorLog: log.New(io.Discard, "", 0), // Suppress TLS handshake errors
 	}
-	log.Fatal(server.ListenAndServeTLS("fullchain.pem", "privkey.pem"))
+	log.Fatal(server.ListenAndServeTLS("resources/fullchain.pem", "resources/privkey.pem"))
 }
 
 func runHTTPServer() {
