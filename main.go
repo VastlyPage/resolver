@@ -97,10 +97,28 @@ func handleRequest(c echo.Context) error {
 		return c.String(http.StatusNotFound, "No data found")
 	}
 
-	_, url, isRedirect, err := hlnames.ResolveHostAndURL(kv, c.Request().URL.Path)
+	visitorPath := c.Request().URL.Path
+	host, url, isRedirect, err := hlnames.ResolveHostAndURL(kv, visitorPath)
 	if err != nil {
 		log.Printf("%s: %v", name, err)
 		return c.String(http.StatusServiceUnavailable, err.Error())
+	}
+
+	if host == "hlprofile:3000" {
+		if visitorPath == "/" {
+			// SSR from hlprofile
+			profile := hlutil.Profile{
+				Avatar:   hlutil.GetStringOrEmpty(kv, "Avatar"),
+				Domain:   name,
+				Bio:      hlutil.GetStringOrEmpty(kv, "Bio"),
+				Twitter:  hlutil.GetStringOrEmpty(kv, "Twitter"),
+				Discord:  hlutil.GetStringOrEmpty(kv, "Discord"),
+				Telegram: hlutil.GetStringOrEmpty(kv, "Telegram"),
+				Website:  hlutil.GetStringOrEmpty(kv, "Website"),
+			}
+			html := hlutil.FetchProfilePage(profile)
+			c.Response().Write([]byte(html))
+		}
 	}
 
 	if isRedirect {

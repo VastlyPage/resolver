@@ -32,3 +32,10 @@ func EnsureHTTPPrefix(url string) string {
 	}
 	return url
 }
+
+func GetStringOrEmpty(kv map[string]interface{}, key string) string {
+	if val, ok := kv[key].(string); ok {
+		return val
+	}
+	return ""
+}

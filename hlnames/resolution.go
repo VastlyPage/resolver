@@ -109,7 +109,8 @@ func ResolveIPRecords(kv map[string]interface{}) (string, error) {
 
 	wg.Wait()
 	if firstRespondingHost == "" {
-		return "", fmt.Errorf("no responding records found")
+		return "hlprofile:3000", nil
+		// return "", fmt.Errorf("no responding records found")
 	}
 	return firstRespondingHost, nil
 }
