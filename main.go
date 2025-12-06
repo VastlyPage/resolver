@@ -87,7 +87,7 @@ func handleRequest(c echo.Context) error {
 	}
 
 	// TODO: Subdomain subdomain subdomain. e.g. subsub.sub.example.hl.place
-	name := hlutil.Normalize(hostParts[0] + ".hl")
+	name := hlutil.Normalize(hostParts[0])
 	nameHash := hlutil.NameHash(name)
 	kv := hlnames.QueryKV(nameHash)
 
