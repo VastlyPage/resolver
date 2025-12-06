@@ -37,5 +37,11 @@ func QueryKV(nameHash string) map[string]interface{} {
 		return nil
 	}
 
-	return result
+	records, ok := result["records"].(map[string]interface{})
+	if !ok {
+		log.Printf("Error: 'records' field not found or invalid type")
+		return nil
+	}
+
+	return records
 }
