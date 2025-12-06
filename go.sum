@@ -1,3 +1,5 @@
+github.com/adraffy/go-ens-normalize v0.1.1 h1:N//kZB/aSdBLAbUFX52iC5d7EHVgkxmLkLQ3nQnvkwE=
+github.com/adraffy/go-ens-normalize v0.1.1/go.mod h1:2wzkGeMLp+VO8lqbu4MYrFeQEVWSV6CGN1Vznrt+Gt0=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/decred/dcrd/crypto/blake256 v1.0.0/go.mod h1:sQl2p6Y26YV+ZOcSTP6thNdn47hh8kt6rqSlvmrXFAc=

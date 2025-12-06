@@ -2,11 +2,11 @@ package hlutil
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/net/idna"
+	"github.com/adraffy/go-ens-normalize/ensip15"
 )
 
 // https://eips.ethereum.org/EIPS/eip-137#namehash-algorithm
@@ -42,7 +42,8 @@ func GetStringOrEmpty(kv map[string]interface{}, key string) string {
 	return ""
 }
 
-func ConvertPunycodeToUrlEncoded(punycode string) string {
-	unicode, _ := idna.ToUnicode(punycode)
-	return url.QueryEscape(unicode)
+func Normalize(real string) string {
+	unicode, _ := idna.ToUnicode(real)
+	normalized := ensip15.Normalize(unicode + ".hl")
+	return normalized
 }
