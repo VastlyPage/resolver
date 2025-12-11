@@ -7,10 +7,7 @@ import (
 )
 
 func QueryKV(nameHash string) map[string]interface{} {
-	// query from https://api.hlnames.xyz/records/data_record/{nameHash}
-	// with header X-API-Key: CPEPKMI-HUSUX6I-SE2DHEA-YYWFG5Y
-
-	req, err := http.NewRequest("GET", "https://api.hlnames.xyz/records/data_record/"+nameHash, nil)
+	req, err := http.NewRequest("GET", "https://api.hlnames.xyz/records/full_record/"+nameHash, nil)
 	if err != nil {
 		log.Printf("Error creating HTTP request: %v", err)
 		return nil
@@ -37,7 +34,13 @@ func QueryKV(nameHash string) map[string]interface{} {
 		return nil
 	}
 
-	records, ok := result["records"].(map[string]interface{})
+	data, ok := result["data"].(map[string]interface{})
+	if !ok {
+		log.Printf("Error: 'data' field not found or invalid type")
+		return nil
+	}
+
+	records, ok := data["records"].(map[string]interface{})
 	if !ok {
 		log.Printf("Error: 'records' field not found or invalid type")
 		return nil
